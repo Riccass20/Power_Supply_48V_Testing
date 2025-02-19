@@ -7,7 +7,7 @@ import time
 import threading
 import os
 import subprocess
-#import multiprocessing
+
 
 INSTALLER_NAME = "ni-visa_24.8_online.exe"  # Make sure this is the correct filename
 
@@ -26,11 +26,11 @@ def install_ni_visa():
         subprocess.run(installer_path, shell=True)
     else:
         print(f"Installer not found in {os.getcwd()}. Please place {INSTALLER_NAME} here and try again.")
-rm = pyvisa.ResourceManager()
-list = rm.list_resources()
-print(f"Connected to {list}" )
 def device_check():
-    global device
+    global device, rm
+    rm = pyvisa.ResourceManager()
+    list = rm.list_resources()
+    print(f"Connected to {list}" )
     for device in list:
         try: 
             psu = rm.open_resource(device)
