@@ -139,7 +139,7 @@ def second_gui():
     sec_gui.title("OUTPUT CONTROL")
     sec_gui.geometry("200x200")
         #making an input for the current
-    c_input = ttk.Label(sec_gui, text = "10 Amps")
+    c_input = ttk.Label(sec_gui, text = "5 Amps")
     c_input.grid(row = 2, column = 1, columnspan=2, pady = 10)
     #making a canvas and light for the current status
     current_canvas =tk.Canvas(sec_gui, width = 26, height = 26)
@@ -149,7 +149,7 @@ def second_gui():
     voltage_canvas =tk.Canvas(sec_gui, width = 26, height = 26)
     voltage_canvas.grid(row = 3, column = 5)
     v_light = voltage_canvas.create_oval(2, 2, 25, 25, fill = "gray")
-    v_input = ttk.Label(sec_gui, text = "48 Volts")
+    v_input = ttk.Label(sec_gui, text = "12 Volts")
     v_input.grid(row = 3, column = 1, columnspan=2, pady = 10)
     v_label = ttk.Label(sec_gui, text = " ")
     v_label.grid(row = 3, column= 6, columnspan=2, pady = 10) 
