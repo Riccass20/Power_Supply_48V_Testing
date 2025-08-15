@@ -1,0 +1,255 @@
+
+#making an interface for the BK precision 
+import tkinter as tk
+from tkinter import ttk
+from tkinter import messagebox
+import pyvisa
+import time
+import threading
+import os
+import subprocess
+
+
+
+INSTALLER_NAME = "ni-visa_24.8_online.exe"  # Make sure this is the correct filename
+
+def is_ni_visa_installed():
+    """Check if NI-VISA is installed on a Windows machine."""
+    visa_path = "C:\\Program Files\\IVI Foundation\\VISA\\Win64\\Bin\\NiVi488.dll"
+    return os.path.exists(visa_path)
+
+def install_ni_visa():
+    """Run the NI-VISA installer if it's available in the script's directory."""
+    installer_path = os.path.join(os.getcwd(), INSTALLER_NAME)
+
+    if os.path.exists(installer_path):
+        print(f"Found installer: {installer_path}")
+        print("Launching the NI-VISA installer...")
+        subprocess.run(installer_path, shell=True)
+    else:
+        print(f"Installer not found in {os.getcwd()}. Please place {INSTALLER_NAME} here and try again.")
+def device_check():
+    global device, rm
+    rm = pyvisa.ResourceManager()
+    list = rm.list_resources()
+    print(f"Connected to {list}" )
+    for device in list:
+        try: 
+            psu = rm.open_resource(device)
+            psu.write("*IDN?")
+            response = psu.read() 
+            if response: 
+                print(f"Connected to {response}" )
+                return device
+        except: 
+            pass
+
+#print(f"the resources connected are:{rm.list_resources()}")
+def connect():
+    global ps
+    is_ni_visa_installed()
+    if not is_ni_visa_installed():
+        install_ni_visa()
+    else:
+        print("NI-VISA is already installed.")
+    device_check()
+    powersupp = device
+    time.sleep(1)
+    try:    
+        ps = rm.open_resource(powersupp) #allocated ps to reference the  
+        connection_canvas.itemconfig(connection_light, fill = "green")
+        ps.write("VOLT 0V") #This will set the voltage to 0V
+        ps.write("CURR 0A") #This will set the current to 0A
+        ps.write("OUTP ON") #this turns the output on so that the voltage spike that occurs when the output is enabled occurs prior to DUT connection
+        print("OUTPUT ON and CONNECTED")
+        time.sleep(1)
+        second_gui()
+        return True
+    except: 
+        connection_canvas.itemconfig(connection_light, fill = "red")
+        return False
+
+def current1():
+    global current_lim_duration, cset
+    powersupp = device
+    ps = rm.open_resource(powersupp)
+    start_time = time.time()
+    current_lim_duration = 1 
+    cset = 10
+    ps.write("CURR 1A")
+    current_canvas.itemconfig(c_light, fill = "yellow")
+    print("CURRENT LIMIT SET")
+    while True: 
+        elapsed = time.time() - start_time
+        if elapsed >= current_lim_duration:
+            ps.write(f"CURR {cset}A")
+            current_canvas.itemconfig(c_light, fill = "green")
+            print("CURRENT LIMIT REMOVED")
+            break
+def voltage():
+    global vfinal
+    vfinal = float(V_entry.get())
+    return True
+def output_on():
+    global vset 
+    voltage_canvas.itemconfig(v_light, fill = "green")
+    powersupp = device
+    ps = rm.open_resource(powersupp)
+    vinit =5
+    #vfinal = float(V_entry.get())
+    vset = vfinal-vinit
+    duration = 15
+    steps = 25  # Number of steps for smooth transition
+    if voltage() is True:
+        try:
+            ps = rm.open_resource(powersupp)
+            ps.write(f"VOLT {vinit}V")
+            ps.write("OUTP ON") #5V occurs at t=111ms          
+            time.sleep(.1*duration/steps)#creating a time delay between steps. I seemed to have an issue making a loop so i had to do it the hard way
+            vset1 = vinit + 2*vset/steps
+            ps.write(f"VOLT {vset1}V") 
+            time.sleep(0.1*duration/steps)
+            vset2 = vinit + 4*vset/steps
+            ps.write(f"VOLT {vset2}V") 
+            time.sleep(0.1*duration/steps)
+            vset3 = vinit + 6*vset/steps
+            ps.write(f"VOLT {vset3}V")  
+            time.sleep(0.5*duration/steps)
+            vset3_2 = vinit + 7*vset/steps
+            ps.write(f"VOLT {vset3_2}V") 
+            time.sleep(1*duration/steps)
+            vset4 = vinit + 8*vset/steps
+            ps.write(f"VOLT {vset4}V")   
+            time.sleep(0.5*duration/steps)
+            vset5 = vinit + 10*vset/steps
+            ps.write(f"VOLT {vset5}V")   
+            time.sleep(0.1*duration/steps)
+            vset5_1 = vinit + 12*vset/steps
+            ps.write(f"VOLT {vset5_1}V")   
+            time.sleep(0.1*duration/steps)
+            vset6 = vinit + 14*vset/steps
+            ps.write(f"VOLT {vset6}V")   
+            time.sleep(0.1*duration/steps)
+            vset6_1 = vinit + 16*vset/steps
+            ps.write(f"VOLT {vset6_1}V")   
+            time.sleep(0.1*duration/steps)
+            vset6_2 = vinit + 18*vset/steps
+            ps.write(f"VOLT {vset6_2}V")  
+            time.sleep(0.1*duration/steps)
+            vset6_3 = vinit + 20*vset/steps
+            ps.write(f"VOLT {vset6_3}V")  
+            time.sleep(0.1*duration/steps)
+            vset7 = vinit + 22*vset/steps
+            ps.write(f"VOLT {vset7}V")    
+            #time.sleep(0.5*duration/steps)
+            #vset8 = vinit + 2.35*vset/steps
+            #ps.write(f"VOLT {vset8}V")    
+            time.sleep(0.1*duration/steps)
+            vset10 = vinit + 25*vset/steps
+            ps.write(f"VOLT {vset10}V")   
+            print("VSET")            
+            output_canvas.itemconfig(output_light, fill = "green")
+            print("DID WORK")
+            return True
+        except: 
+            output_canvas.itemconfig(output_light, fill = "pink")
+            print("DID NOT WORK")
+            return False
+
+def run_functions():
+    thread1 = threading.Thread(target=current1)
+    thread2 = threading.Thread(target= output_on)
+    thread1.start()
+    thread2.start()
+    return True
+
+       
+def output_off():
+    powersupp = device
+    try:
+        ps = rm.open_resource(powersupp)
+        #ps.write("OUTP OFF")
+        ps.write("CURR 0A")
+        ps.write("VOLT 0V")
+        output_canvas.itemconfig(output_light, fill = "red")
+        current_canvas.itemconfig(c_light, fill = "red")
+        voltage_canvas.itemconfig(v_light, fill = "red")
+        return True
+    except: 
+        output_on()
+        return 
+sec_gui = None 
+def second_gui():
+    global output_canvas, output_light, v_light, c_light, current_canvas, voltage_canvas, sec_gui
+    global V_entry
+    if sec_gui is None: 
+        sec_gui = tk.Toplevel()
+        sec_gui.title("OUTPUT CONTROL")
+        #sec_gui.geometry("260x200")
+            #making an input for the current
+        c_input = ttk.Label(sec_gui, text = "10 Amps")
+        c_input.grid(row = 2, column = 1, columnspan=2, pady = 10)
+        #making a canvas and light for the current status
+        current_canvas =tk.Canvas(sec_gui, width = 26, height = 26)
+        current_canvas.grid(row = 2, column = 5)
+
+        c_light = current_canvas.create_oval(2, 2, 25, 25, fill = "gray")
+        voltage_canvas =tk.Canvas(sec_gui, width = 26, height = 26)
+        voltage_canvas.grid(row = 3, column = 5)
+        v_light = voltage_canvas.create_oval(2, 2, 25, 25, fill = "gray")
+        V_entry = ttk.Entry(sec_gui)
+        V_entry.grid(row = 3, column = 6, columnspan=2, pady = 10)
+
+        V_label = ttk.Label(sec_gui, text = "Entry Voltage")
+        V_label.grid(row = 3, column = 1, columnspan=2, pady = 10)
+        #v_label = ttk.Label(sec_gui, text = " ")
+        #v_label.grid(row = 3, column= 6, columnspan=2, pady = 10) 
+            ########### MAKING OUTPUT OFF and ON BUTTONs and a light ###########################
+        outp_off_button = ttk.Button(sec_gui, text = "OUTPUT OFF", command = output_off)
+        outp_off_button.grid(row = 4, column = 5, columnspan=2, pady = 10)
+
+        outp_on_button = ttk.Button(sec_gui, text = "OUTPUT ON", command = run_functions)
+        outp_on_button.grid(row = 4, column = 1, columnspan=2, pady = 10)
+
+        output_label = ttk.Label(sec_gui, text = "OUTPUT Status:")
+        output_label.grid(row = 5, column = 1, columnspan=2, pady = 10)
+
+        output_canvas = tk.Canvas(sec_gui, width = 30, height = 30)
+        output_canvas.grid(row = 5, column = 4)
+
+        output_light = output_canvas.create_oval(2, 2, 29, 29, fill = "gray")  
+        sec_gui.protocol("WM_DELETE_WINDOW", on_close)
+   
+def on_close():
+    global device
+    response = messagebox.askyesno("Exit Confirmation", "Are you sure you want to exit?\nThis will turn the PS output off")
+    if response:
+        print("Closing GUI")
+        if sec_gui:
+            output_off()
+            sec_gui.destroy()
+            gui.destroy()
+        else: 
+            gui.destroy()    
+    else: 
+        print("Window closing canceled")
+
+############   MAKING THE GUI    ####################################
+gui = tk.Tk()
+gui.title("Power Supply Operation")
+gui.geometry("300x150")
+#Making the connection liight and button
+connection_button = ttk.Button(gui, text = "Initialize Power Supply", command = connect)
+connection_button.grid(row = 4, column = 2, columnspan =1, pady = 10)
+
+connection_canvas = tk.Canvas(gui, width=36, height=36)
+connection_canvas.grid(row = 4, column =3)
+
+connection_light = connection_canvas.create_oval(2, 2, 35, 35, fill = "gray") 
+
+############  Making a label for the limitations of the Power Supply  #####################
+ps_label = ttk.Label(gui, text = "  INITIALIZE POWER SUPPLY",font=20)
+ps_label.grid(row = 0, column = 2, columnspan=2, pady = 10)
+
+gui.protocol("WM_DELETE_WINDOW", on_close)
+gui.mainloop()
